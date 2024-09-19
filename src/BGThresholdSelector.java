@@ -192,6 +192,44 @@ public class BGThresholdSelector
 		return maxHeight*Math.pow(-(x) - mean, 2)/(2*var);
 	}
 
+	public void plotGaussGraph(int[] bestFitGaussAry, char[][] gaussGraph, String logFile) throws IOException {
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
+		outFile.write("Entering plotGaussGraph() method");
+
+		setBlanks(gaussGraph);
+		for (int i = 0; i <= maxVal; i++)
+			if (bestFitGaussAry[i] > 0)
+				for (int j = 0; j < bestFitGaussAry[i]; j++)
+					gaussGraph[i][j] = '*';
+
+		outFile.write("Leaving plotGaussGraph() method");
+		outFile.close();
+	}
+
+	public void plotGapGraph(int[] histAry, int[] bestFitGaussAry, String logFile) throws IOException {
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
+		outFile.write("Entering plotGaussGraph() method");
+
+		setBlanks(gaussGraph);
+		int end1, end2;
+		for (int i = 0; i <= maxVal; i++) {
+			if (bestFitGaussAry[i] <= histAry[i]) {
+				end1 = bestFitGaussAry[i];
+				end2 = histAry[i];
+			} else {
+				end1 = histAry[i];
+				end2 = bestFitGaussAry[i];
+			}
+			for (int j = end1; j <= end2; j++)
+				gaussGraph[i][j] = '@';
+		}
+
+		outFile.write("Leaving plotGapGraph() method");
+		outFile.close();
+	}
+
+
+
 	private void initFromHeader(BufferedReader bufferedReader) throws IOException {
 		String headerLine = bufferedReader.readLine();
 		if (headerLine != null) {
