@@ -144,8 +144,6 @@ public class BGThresholdSelector
 		return sum;
 	}
 
-
-
 	public double computeMean(int leftIndex, int rightIndex, int maxHeight, int[] histAry, String logFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
 		outFile.write("Entering computeMean method");
@@ -177,6 +175,10 @@ public class BGThresholdSelector
 
 		outFile.close();
 		return sum/numPixels;
+	}
+
+	public double modifiedGauss(double x, double mean, double var, int maxHeight) {
+		return maxHeight*Math.pow(-(x) - mean, 2)/(2*var);
 	}
 
 	public int getNumRows() {return numRows;}
