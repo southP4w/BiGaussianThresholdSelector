@@ -51,26 +51,6 @@ public class BGThresholdSelector
 
 		return maxFrequency;    // return the max frequency found in the histogram
 	}
-	private void initFromHeader(BufferedReader bufferedReader) throws IOException {
-		String headerLine = bufferedReader.readLine();
-		if (headerLine != null) {
-			String[] headerTokens = headerLine.split("\\s+");  // split by whitespace, get header from file: numRows numCols minVal maxVal
-			numRows = Integer.parseInt(headerTokens[0]);        // [] <-- numRows numCols minVal maxVal
-			numCols = Integer.parseInt(headerTokens[1]);        // [numRows] <-- numCols minVal maxVal
-			minVal = Integer.parseInt(headerTokens[2]);         // [numRows, numCols] <-- minVal maxVal
-			maxVal = Integer.parseInt(headerTokens[3]);         // [numRows, numCols, minVal] <-- maxVal
-			histAry = new int[maxVal + 1];    // reinit histAry based on maxVal
-		}
-	}
-	private int getMaxFrequency(int pixelValue, int frequency, int maxFrequency) {
-		if (pixelValue >= 0 && pixelValue <= maxVal) {
-			histAry[pixelValue] = frequency;
-			if (frequency > maxFrequency)
-				maxFrequency = frequency;    // increment maxFrequency if current frequency is greater
-		}
-
-		return maxFrequency;
-	}
 
 	public void printHist(String histFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile));
@@ -177,8 +157,30 @@ public class BGThresholdSelector
 		return sum/numPixels;
 	}
 
-	public double modifiedGauss(double x, double mean, double var, int maxHeight) {
+	public double modifiedGauss(int x, double mean, double var, int maxHeight) {
 		return maxHeight*Math.pow(-(x) - mean, 2)/(2*var);
+	}
+
+	private void initFromHeader(BufferedReader bufferedReader) throws IOException {
+		String headerLine = bufferedReader.readLine();
+		if (headerLine != null) {
+			String[] headerTokens = headerLine.split("\\s+");  // split by whitespace, get header from file: numRows numCols minVal maxVal
+			numRows = Integer.parseInt(headerTokens[0]);        // [] <-- numRows numCols minVal maxVal
+			numCols = Integer.parseInt(headerTokens[1]);        // [numRows] <-- numCols minVal maxVal
+			minVal = Integer.parseInt(headerTokens[2]);         // [numRows, numCols] <-- minVal maxVal
+			maxVal = Integer.parseInt(headerTokens[3]);         // [numRows, numCols, minVal] <-- maxVal
+			histAry = new int[maxVal + 1];    // reinit histAry based on maxVal
+		}
+	}
+
+	private int getMaxFrequency(int pixelValue, int frequency, int maxFrequency) {
+		if (pixelValue >= 0 && pixelValue <= maxVal) {
+			histAry[pixelValue] = frequency;
+			if (frequency > maxFrequency)
+				maxFrequency = frequency;    // increment maxFrequency if current frequency is greater
+		}
+
+		return maxFrequency;
 	}
 
 	public int getNumRows() {return numRows;}

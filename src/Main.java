@@ -14,6 +14,7 @@ public class Main
 			ioException.printStackTrace();
 		}
 	}
+
 	private static void validateArguments(String[] args) {
 		if (args.length != 4) {
 			System.err.println("You must have exactly 4 arguments: inFile histFile gaussFile logFile");
