@@ -54,7 +54,7 @@ public class BGThresholdSelector
 	}
 
 	public void printHist(String histFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile));
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile, true));
 		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
 
 		int width = Integer.toString(maxVal).length(), fieldWidth = width + 1;
@@ -228,6 +228,52 @@ public class BGThresholdSelector
 		outFile.close();
 	}
 
+	public void printBestFitGauss(String gaussFile) throws IOException {
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(gaussFile));
+		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
+
+		int width = Integer.toString(maxVal).length(), fieldWidth = width + 1;
+		String formatString = "%-" + fieldWidth + "d%d";
+
+		for (int i = 0; i <= maxVal; i++)
+			outFile.write((String.format(formatString, i, bestFitGaussAry[i])) + '\n');
+
+		outFile.close();
+	}
+
+	public void dispGaussGraph(String gaussFile) throws IOException {
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(gaussFile, true)); // don't overwrite
+		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
+
+		for (int i = 0; i <= maxVal; i++) {
+			outFile.write(i + " :");
+			for (int j = 0; j <= histHeight; j++) {
+				char c = gaussGraph[i][j];
+				if (c != ' ')
+					outFile.write(c);
+			}
+			outFile.newLine();
+		}
+
+		outFile.close();
+	}
+
+	public void dispGapGraph(String gaussFile) throws IOException {
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(gaussFile, true)); // don't overwrite
+		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
+
+		for (int i = 0; i <= maxVal; i++) {
+			outFile.write(i + " :");
+			for (int j = 0; j <= histHeight; j++) {
+				char c = gapGraph[i][j];
+				if (c != ' ')
+					outFile.write(c);
+			}
+			outFile.newLine();
+		}
+
+		outFile.close();
+	}
 
 
 	private void initFromHeader(BufferedReader bufferedReader) throws IOException {
