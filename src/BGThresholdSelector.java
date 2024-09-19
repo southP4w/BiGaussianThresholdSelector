@@ -1,4 +1,8 @@
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class BGThresholdSelector
 {
@@ -34,68 +38,71 @@ public class BGThresholdSelector
 		for (int i = 0; i < bestFitGaussAry.length; i++)
 			bestFitGaussAry[i] = 0;
 		for (int i = 0; i < maxVal + 1; i++)
-			for (int j = 0; j < histHeight + 1; j++)
+			for (int j = 0; j < histHeight + 1; j++) {
 				gaussGraph[i][j] = ' ';
-		for (int i = 0; i < maxVal + 1; i++)
-			for (int j = 0; j < histHeight + 1; j++)
 				gapGraph[i][j] = ' ';
+			}
 	}
 
-	public int loadHist(String inFile) {
+	public int loadHist(String inFile) throws IOException {
 		int maxFrequency = 0;  // store most frequent value in histAry
-
-		try (BufferedReader br = new BufferedReader(new FileReader(inFile))) {
-			extractToHistAry(br);
-
-			String line;    // read the histogram data line by line from inFile (using BufferedReader br)
-			while ((line = br.readLine()) != null) {
-				String[] tokens = line.split("\\s+");  // Split by any whitespace
-				int pixelValue = Integer.parseInt(tokens[0]);  // First column: pixel intensity
-				int frequency = Integer.parseInt(tokens[1]);   // Second column: frequency
-
-				maxFrequency = getMaxFrequency(pixelValue, frequency, maxFrequency);
-			}
-		} catch (IOException e) {
-			System.out.println("Error reading file: " + inFile);
-			e.printStackTrace();
+		BufferedReader bufferedReader = new BufferedReader(new FileReader(inFile));
+		initFromHeader(bufferedReader);
+		String line;    // read the histogram data line by line from inFile (using BufferedReader bufferedReader)
+		while ((line = bufferedReader.readLine()) != null) {
+			String[] tokens = line.split("\\s+");  // regex to split by any amount of whitespace
+			int pixelValue = Integer.parseInt(tokens[0]);  // 1st column: pixel intensity
+			int frequency = Integer.parseInt(tokens[1]);   // 2nd column: frequency
+			maxFrequency = getMaxFrequency(pixelValue, frequency, maxFrequency);
 		}
 
 		return maxFrequency;    // return the max frequency found in the histogram
 	}
+	private void initFromHeader(BufferedReader bufferedReader) throws IOException {
+		String headerLine = bufferedReader.readLine();
+		if (headerLine != null) {
+			String[] headerTokens = headerLine.split("\\s+");  // split by whitespace, get header from file: numRows numCols minVal maxVal
+			numRows = Integer.parseInt(headerTokens[0]);        // [] <-- numRows numCols minVal maxVal
+			numCols = Integer.parseInt(headerTokens[1]);        // [numRows] <-- numCols minVal maxVal
+			minVal = Integer.parseInt(headerTokens[2]);         // [numRows, numCols] <-- minVal maxVal
+			maxVal = Integer.parseInt(headerTokens[3]);         // [numRows, numCols, minVal] <-- maxVal
+			histAry = new int[maxVal + 1];    // reinit histAry based on maxVal
+		}
+	}
+	private int getMaxFrequency(int pixelValue, int frequency, int maxFrequency) {
+		if (pixelValue >= 0 && pixelValue <= maxVal) {
+			histAry[pixelValue] = frequency;
+			if (frequency > maxFrequency)
+				maxFrequency = frequency;    // increment maxFrequency if current frequency is greater
+		}
 
-	public void printHist(String outFileName) {
-		try (BufferedWriter histCountFile = new BufferedWriter(new FileWriter(outFileName))) {
-			histCountFile.write(numRows + " " + numCols + " " + minVal + " " + maxVal);
-			histCountFile.newLine();
+		return maxFrequency;
+	}
 
-			int width = Integer.toString(maxVal).length();
-			int fieldWidth = width + 1;
-
-			String formatString = "%-" + fieldWidth + "d%d";
-			for (int i = 0; i <= maxVal; i++) {
-				String line = String.format(formatString, i, histAry[i]);
-				histCountFile.write(line);
-				histCountFile.newLine();
-			}
-		} catch (IOException e) {
-			System.out.println("Error writing file: " + outFileName);
-			e.printStackTrace();
+	public void printHist(String histFile) throws IOException {
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile));
+		outFile.write(numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal);
+		outFile.newLine();
+		int width = Integer.toString(maxVal).length();
+		int fieldWidth = width + 1;
+		String formatString = "%-" + fieldWidth + "d%d";
+		for (int i = 0; i <= maxVal; i++) {
+			String line = String.format(formatString, i, histAry[i]);
+			outFile.write(line);
+			outFile.newLine();
 		}
 	}
 
-	public void dispHist(String histGraphFileName) {
-		try (BufferedWriter histGraphFile = new BufferedWriter(new FileWriter(histGraphFileName))) {
-			histGraphFile.write(numRows + " " + numCols + " " + minVal + " " + maxVal);
+	public void dispHist(String histFile) throws IOException {
+		BufferedWriter histGraphFile = new BufferedWriter(new FileWriter(histFile, true));
+		histGraphFile.newLine();    // blank line
+		histGraphFile.write(numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal);
+		histGraphFile.newLine();
+		for (int i = 0; i <= maxVal; i++) {
+			histGraphFile.write(i + " (" + histAry[i] + "):");
+			for (int j = 0; j < histAry[i]; j++)
+				histGraphFile.write('+');
 			histGraphFile.newLine();
-			for (int i = 0; i <= maxVal; i++) {
-				histGraphFile.write(i + " (" + histAry[i] + "):");
-				for (int j = 0; j < histAry[i]; j++)
-					histGraphFile.write("+");
-				histGraphFile.newLine();
-			}
-		} catch (IOException e) {
-			System.out.println("Error writing file: " + histGraphFileName);
-			e.printStackTrace();
 		}
 	}
 
@@ -122,25 +129,55 @@ public class BGThresholdSelector
 		return graph;
 	}
 
-	private void extractToHistAry(BufferedReader br) throws IOException {
-		String headerLine = br.readLine();    // read header from file (numRows numCols minVal maxVal)
-		if (headerLine != null) {
-			String[] headerTokens = headerLine.split("\\s+");  // regex to split by any whitespace
-			numRows = Integer.parseInt(headerTokens[0]);
-			numCols = Integer.parseInt(headerTokens[1]);
-			minVal = Integer.parseInt(headerTokens[2]);
-			maxVal = Integer.parseInt(headerTokens[3]);
-			histAry = new int[maxVal + 1];    // reinit histAry based on maxVal
-		}
+	public int biGaussian(String logFile) throws IOException {
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
+		outFile.write("Entering biGaussian method");
+		double sum1, sum2, total, minSumDiff;
+		int offset = (maxVal - minVal)/10;
+		int dividePt = offset;
+		int bestThr = dividePt;
+		minSumDiff = 99999.0;    // a large value
+
+		return 0;
 	}
 
-	private int getMaxFrequency(int pixelValue, int frequency, int maxFrequency) {
-		if (pixelValue >= 0 && pixelValue <= maxVal) {
-			histAry[pixelValue] = frequency;
-			if (frequency > maxFrequency)    // Update the maxFrequency if the current frequency is greater
-				maxFrequency = frequency;
+	public double fitGauss(int leftIndex, int rightIndex, int[] histAry, int[] gaussAry, int maxHeight, char[][] graph, String logFile) throws IOException {
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
+		outFile.write("Entering fitGauss method");
+		double sum = 0.0, mean, var, gVal;
+
+		return sum;
+	}
+
+	public double computeMean(int leftIndex, int rightIndex, int maxHeight, int[] histAry, String logFile) throws IOException {
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
+		outFile.write("Entering computeMean method");
+		maxHeight = 0;
+		double sum = 0;
+		int numPixels = 0;
+		for (int i = leftIndex; i < rightIndex; i++) {
+			sum += (histAry[i]*i);
+			numPixels += histAry[i];
+			if (histAry[i] > maxHeight)
+				maxHeight = histAry[i];
 		}
-		return maxFrequency;
+		outFile.write("Leaving computeMean method");
+
+		return sum/numPixels;
+	}
+
+	public double computeVar(int leftIndex, int rightIndex, double mean, int[] histAry, String logFile) throws IOException {
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
+		outFile.write("Entering computeVar method");
+		double sum = 0.0;
+		int numPixels = 0;
+		for (int i = leftIndex; i < rightIndex; i++) {
+			sum += Math.pow((double) histAry[i]*((double) i - mean), 2);
+			numPixels += histAry[i];
+		}
+		outFile.write("Leaving computeVar method");
+
+		return sum/numPixels;
 	}
 
 	public int getNumRows() {return numRows;}
@@ -157,4 +194,5 @@ public class BGThresholdSelector
 	public void setBiGaussThrVal(int biGaussThrVal) {this.biGaussThrVal = biGaussThrVal;}
 	public void setHistHeight(int histHeight) {this.histHeight = histHeight;}
 	public void setMaxHeight(int maxHeight) {this.maxHeight = maxHeight;}
+
 }
