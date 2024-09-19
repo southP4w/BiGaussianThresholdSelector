@@ -37,21 +37,33 @@ public class BGThresholdSelector
 	}
 
 	public int loadHist(String inFile) throws IOException {
-		BufferedReader bufferedReader = new BufferedReader(new FileReader(inFile));
-		initFromHeader(bufferedReader);
-
-		int maxFrequency = 0;  // store most frequent value in histAry
-		String line;    // read the histogram data line by line from inFile (using BufferedReader bufferedReader)
-		while ((line = bufferedReader.readLine()) != null) {
-			String[] tokens = line.split("\\s+");  // regex to split by any amount of whitespace
-			int pixelValue = Integer.parseInt(tokens[0]);  // 1st column: pixel value
-			int frequency = Integer.parseInt(tokens[1]);   // 2nd column: frequency
-			maxFrequency = getMaxFrequency(pixelValue, frequency, maxFrequency);
+		BufferedReader reader = new BufferedReader(new FileReader(inFile));
+		initFromHeader(reader);
+		int maxFrequency = 0;
+		String line;
+		while ((line = reader.readLine()) != null) {
+			line = line.trim();
+			if (line.isEmpty()) continue;
+			String[] tokens = line.split("\\s+");
+			if (tokens.length >= 2) {
+				int pixelValue = Integer.parseInt(tokens[0]);
+				int frequency = Integer.parseInt(tokens[1]);
+				maxFrequency = getMaxFrequency(pixelValue, frequency, maxFrequency);
+			}
 		}
+		reader.close();
 
-		bufferedReader.close();
-		return maxFrequency;    // return the max frequency found in the histogram
+		histHeight = maxFrequency;
+		maxHeight = maxFrequency;
+
+		gaussGraph = new char[maxVal + 1][histHeight + 1];
+		gapGraph = new char[maxVal + 1][histHeight + 1];
+		setBlanks(gaussGraph);
+		setBlanks(gapGraph);
+
+		return maxFrequency;
 	}
+
 
 	public void printHist(String histFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile, true));
@@ -123,11 +135,11 @@ public class BGThresholdSelector
 				bestThr = dividePt;
 				copyArys(gaussAry, bestFitGaussAry);
 			}
-			outFile.write("In biGaussian(): dividePt=" + dividePt + ", sum1=" + sum1 + ", sum2=" + sum2 + ", total=" + total + ", minSumDiff=" + minSumDiff + ", bestThr=" + bestThr);
+			outFile.write("\nIn biGaussian(): dividePt=" + dividePt + ", sum1=" + sum1 + ", sum2=" + sum2 + ", total=" + total + ", minSumDiff=" + minSumDiff + ", bestThr=" + bestThr);
 			dividePt++;
 		}
 
-		outFile.write("Leaving biGaussian method");
+		outFile.write("\nLeaving biGaussian method");
 		outFile.close();
 		return bestThr;
 	}
@@ -189,7 +201,7 @@ public class BGThresholdSelector
 	}
 
 	public double modifiedGauss(int x, double mean, double var, int maxHeight) {
-		return maxHeight*Math.pow(-(x) - mean, 2)/(2*var);
+		return maxHeight * Math.exp(-Math.pow(x - mean, 2) / (2 * var));
 	}
 
 	public void plotGaussGraph(int[] bestFitGaussAry, char[][] gaussGraph, String logFile) throws IOException {
@@ -275,16 +287,18 @@ public class BGThresholdSelector
 		outFile.close();
 	}
 
-
 	private void initFromHeader(BufferedReader bufferedReader) throws IOException {
 		String headerLine = bufferedReader.readLine();
 		if (headerLine != null) {
-			String[] headerTokens = headerLine.split("\\s+");  // split by whitespace, get header from file: numRows numCols minVal maxVal
-			numRows = Integer.parseInt(headerTokens[0]);        // [] <-- numRows numCols minVal maxVal
-			numCols = Integer.parseInt(headerTokens[1]);        // [numRows] <-- numCols minVal maxVal
-			minVal = Integer.parseInt(headerTokens[2]);         // [numRows, numCols] <-- minVal maxVal
-			maxVal = Integer.parseInt(headerTokens[3]);         // [numRows, numCols, minVal] <-- maxVal
-			histAry = new int[maxVal + 1];    // reinit histAry based on maxVal
+			String[] headerTokens = headerLine.split("\\s+");
+			numRows = Integer.parseInt(headerTokens[0]);
+			numCols = Integer.parseInt(headerTokens[1]);
+			minVal = Integer.parseInt(headerTokens[2]);
+			maxVal = Integer.parseInt(headerTokens[3]);
+			histAry = new int[maxVal + 1]; // reinit histAry based on maxVal
+
+			gaussAry = new int[maxVal + 1];
+			bestFitGaussAry = new int[maxVal + 1];
 		}
 	}
 
