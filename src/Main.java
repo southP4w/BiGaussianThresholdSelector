@@ -26,8 +26,10 @@ public class Main
 			gaussFile.write("\n** Below are the best-fitted Gaussians **:\n");
 			bgs.printBestFitGauss(args[2]);
 
+			bgs.plotGaussGraph(bgs.getBestFitGaussAry(), bgs.getGaussGraph(), args[3]);
 			gaussFile.write("\n** Below is the graphic display of best-fitted Gaussians **:\n");
 
+			bgs.plotGapGraph(bgs.getHistAry(), bgs.getBestFitGaussAry(), args[3]);
 			bgs.dispGaussGraph(args[2]);
 		} catch (IOException ioException) {
 			System.err.println("Error with input files, please check paths/destinations");
