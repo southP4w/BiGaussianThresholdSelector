@@ -49,28 +49,34 @@ public class BGThresholdSelector
 			maxFrequency = getMaxFrequency(pixelValue, frequency, maxFrequency);
 		}
 
+		bufferedReader.close();
 		return maxFrequency;    // return the max frequency found in the histogram
 	}
 
 	public void printHist(String histFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile));
 		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
+
 		int width = Integer.toString(maxVal).length(), fieldWidth = width + 1;
 		String formatString = "%-" + fieldWidth + "d%d";
+
 		for (int i = 0; i <= maxVal; i++)
 			outFile.write((String.format(formatString, i, histAry[i])) + '\n');
+
 		outFile.close();
 	}
 
 	public void dispHist(String histFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile, true));    // set `append` boolean to true to not overwrite
 		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
+
 		for (int i = 0; i <= maxVal; i++) {
 			outFile.write(i + " (" + histAry[i] + "):");
 			for (int j = 0; j < histAry[i]; j++)
 				outFile.write('+');
 			outFile.newLine();
 		}
+
 		outFile.close();
 	}
 
@@ -100,26 +106,47 @@ public class BGThresholdSelector
 	public int biGaussian(String logFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
 		outFile.write("Entering biGaussian method");
+
 		double sum1, sum2, total, minSumDiff;
 		int offset = (maxVal - minVal)/10;
 		int dividePt = offset;
 		int bestThr = dividePt;
 		minSumDiff = 99999.0;    // a large value
-		setZero(gaussAry);
 
-		return 0;
+		while (dividePt < (maxVal - offset)) {
+			setZero(gaussAry);
+			sum1 = fitGauss(0, dividePt, histAry, gaussAry, maxHeight, gaussGraph, logFile);
+			sum2 = fitGauss(dividePt, maxVal, histAry, gaussAry, maxHeight, gaussGraph, logFile);
+			total = sum1 + sum2;
+			if (total < minSumDiff) {
+				minSumDiff = total;
+				bestThr = dividePt;
+				copyArys(gaussAry, bestFitGaussAry);
+			}
+			outFile.write("In biGaussian(): dividePt=" + dividePt + ", sum1=" + sum1 + ", sum2=" + sum2 + ", total=" + total + ", minSumDiff=" + minSumDiff + ", bestThr=" + bestThr);
+			dividePt++;
+		}
+
+		outFile.write("Leaving biGaussian method");
+		outFile.close();
+		return bestThr;
 	}
 
 	public double fitGauss(int leftIndex, int rightIndex, int[] histAry, int[] gaussAry, int maxHeight, char[][] graph, String logFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
 		outFile.write("Entering fitGauss method");
+
 		double sum = 0.0, mean, var, gVal;
 		mean = computeMean(leftIndex, rightIndex, maxHeight, histAry, logFile);
 		var = computeVar(leftIndex, rightIndex, mean, histAry, logFile);
+
 		for (int i = leftIndex; i <= rightIndex; i++) {
-//			gVal =
+			gVal = modifiedGauss(i, mean, var, maxHeight);
+			sum += Math.abs(gVal - histAry[i]);
+			gaussAry[i] = (int) gVal;
 		}
 
+		outFile.write("Leaving fitGauss method. Sum is " + sum);
 		outFile.close();
 		return sum;
 	}
@@ -127,17 +154,19 @@ public class BGThresholdSelector
 	public double computeMean(int leftIndex, int rightIndex, int maxHeight, int[] histAry, String logFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
 		outFile.write("Entering computeMean method");
+
 		maxHeight = 0;
 		double sum = 0;
 		int numPixels = 0;
+
 		for (int i = leftIndex; i < rightIndex; i++) {
 			sum += (histAry[i]*i);
 			numPixels += histAry[i];
 			if (histAry[i] > maxHeight)
 				maxHeight = histAry[i];
 		}
-		outFile.write("Leaving computeMean method");
 
+		outFile.write("Leaving computeMean method");
 		outFile.close();
 		return sum/numPixels;
 	}
@@ -145,14 +174,16 @@ public class BGThresholdSelector
 	public double computeVar(int leftIndex, int rightIndex, double mean, int[] histAry, String logFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
 		outFile.write("Entering computeVar method");
+
 		double sum = 0.0;
 		int numPixels = 0;
+
 		for (int i = leftIndex; i < rightIndex; i++) {
 			sum += Math.pow((double) histAry[i]*((double) i - mean), 2);
 			numPixels += histAry[i];
 		}
-		outFile.write("Leaving computeVar method");
 
+		outFile.write("Leaving computeVar method");
 		outFile.close();
 		return sum/numPixels;
 	}
