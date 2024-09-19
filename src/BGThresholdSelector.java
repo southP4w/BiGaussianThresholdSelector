@@ -44,7 +44,7 @@ public class BGThresholdSelector
 		String line;    // read the histogram data line by line from inFile (using BufferedReader bufferedReader)
 		while ((line = bufferedReader.readLine()) != null) {
 			String[] tokens = line.split("\\s+");  // regex to split by any amount of whitespace
-			int pixelValue = Integer.parseInt(tokens[0]);  // 1st column: pixel intensity
+			int pixelValue = Integer.parseInt(tokens[0]);  // 1st column: pixel value
 			int frequency = Integer.parseInt(tokens[1]);   // 2nd column: frequency
 			maxFrequency = getMaxFrequency(pixelValue, frequency, maxFrequency);
 		}
@@ -74,22 +74,24 @@ public class BGThresholdSelector
 
 	public void printHist(String histFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile));
-		outFile.write(numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
+		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
 		int width = Integer.toString(maxVal).length(), fieldWidth = width + 1;
 		String formatString = "%-" + fieldWidth + "d%d";
 		for (int i = 0; i <= maxVal; i++)
 			outFile.write((String.format(formatString, i, histAry[i])) + '\n');
+		outFile.close();
 	}
 
 	public void dispHist(String histFile) throws IOException {
-		BufferedWriter histGraphFile = new BufferedWriter(new FileWriter(histFile, true));    // set `append` boolean to true to not overwrite
-		histGraphFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile, true));    // set `append` boolean to true to not overwrite
+		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
 		for (int i = 0; i <= maxVal; i++) {
-			histGraphFile.write(i + " (" + histAry[i] + "):");
+			outFile.write(i + " (" + histAry[i] + "):");
 			for (int j = 0; j < histAry[i]; j++)
-				histGraphFile.write('+');
-			histGraphFile.newLine();
+				outFile.write('+');
+			outFile.newLine();
 		}
+		outFile.close();
 	}
 
 	public void copyArys(int[] ary1, int[] ary2) throws IllegalArgumentException {
@@ -123,6 +125,7 @@ public class BGThresholdSelector
 		int dividePt = offset;
 		int bestThr = dividePt;
 		minSumDiff = 99999.0;    // a large value
+		setZero(gaussAry);
 
 		return 0;
 	}
@@ -131,9 +134,17 @@ public class BGThresholdSelector
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
 		outFile.write("Entering fitGauss method");
 		double sum = 0.0, mean, var, gVal;
+		mean = computeMean(leftIndex, rightIndex, maxHeight, histAry, logFile);
+		var = computeVar(leftIndex, rightIndex, mean, histAry, logFile);
+		for (int i = leftIndex; i <= rightIndex; i++) {
+//			gVal =
+		}
 
+		outFile.close();
 		return sum;
 	}
+
+
 
 	public double computeMean(int leftIndex, int rightIndex, int maxHeight, int[] histAry, String logFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
@@ -149,6 +160,7 @@ public class BGThresholdSelector
 		}
 		outFile.write("Leaving computeMean method");
 
+		outFile.close();
 		return sum/numPixels;
 	}
 
@@ -163,6 +175,7 @@ public class BGThresholdSelector
 		}
 		outFile.write("Leaving computeVar method");
 
+		outFile.close();
 		return sum/numPixels;
 	}
 
