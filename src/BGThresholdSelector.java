@@ -10,11 +10,9 @@ public class BGThresholdSelector
 	private int biGaussThrVal;    // the auto-selected threshold value by the BG method
 	private int histHeight;    // largest element hist[i] in the input histogram
 	private int maxHeight;    // largest element hist[i] within a given range of the histogram. Init to 0
-
 	private int[] histAry;   // 1D int[] (size maxVal+1) to store the hist (dynamically allocated at runtime, init to 0)
 	private int[] gaussAry;    // 1D int[] (size maxVal+1) to store modified Gauss curve values. (DynAl, init 0)
 	private int[] bestFitGaussAry;    // 1D int array to store the best Bi-Means Gaussian curves (init to 0)
-
 	private char[][] gaussGraph;    // 2D character array (size maxVal+1 × histogramHeight+1, all init to blank)
 	private char[][] gapGraph;    // 2D character array (size maxVal+1 × histogramHeight+1, all init to blank)
 
@@ -23,31 +21,26 @@ public class BGThresholdSelector
 		this.numCols = numCols;
 		this.minVal = minVal;
 		this.maxVal = maxVal;
-		maxHeight = 0;
 
+		maxHeight = 0;
 		histAry = new int[maxVal + 1];
 		gaussAry = new int[maxVal + 1];
 		bestFitGaussAry = new int[maxVal + 1];
 		gaussGraph = new char[maxVal + 1][histHeight + 1];
 		gapGraph = new char[maxVal + 1][histHeight + 1];
 
-		for (int i = 0; i < histAry.length; i++)
-			histAry[i] = 0;
-		for (int i = 0; i < gaussAry.length; i++)
-			gaussAry[i] = 0;
-		for (int i = 0; i < bestFitGaussAry.length; i++)
-			bestFitGaussAry[i] = 0;
-		for (int i = 0; i < maxVal + 1; i++)
-			for (int j = 0; j < histHeight + 1; j++) {
-				gaussGraph[i][j] = ' ';
-				gapGraph[i][j] = ' ';
-			}
+		for (int i = 0; i < maxVal + 1; i++) {
+			histAry[i] = gaussAry[i] = bestFitGaussAry[i] = 0;
+			for (int j = 0; j < histHeight + 1; j++)
+				gaussGraph[i][j] = gapGraph[i][j] = ' ';
+		}
 	}
 
 	public int loadHist(String inFile) throws IOException {
-		int maxFrequency = 0;  // store most frequent value in histAry
 		BufferedReader bufferedReader = new BufferedReader(new FileReader(inFile));
 		initFromHeader(bufferedReader);
+
+		int maxFrequency = 0;  // store most frequent value in histAry
 		String line;    // read the histogram data line by line from inFile (using BufferedReader bufferedReader)
 		while ((line = bufferedReader.readLine()) != null) {
 			String[] tokens = line.split("\\s+");  // regex to split by any amount of whitespace
@@ -81,23 +74,16 @@ public class BGThresholdSelector
 
 	public void printHist(String histFile) throws IOException {
 		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile));
-		outFile.write(numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal);
-		outFile.newLine();
-		int width = Integer.toString(maxVal).length();
-		int fieldWidth = width + 1;
+		outFile.write(numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
+		int width = Integer.toString(maxVal).length(), fieldWidth = width + 1;
 		String formatString = "%-" + fieldWidth + "d%d";
-		for (int i = 0; i <= maxVal; i++) {
-			String line = String.format(formatString, i, histAry[i]);
-			outFile.write(line);
-			outFile.newLine();
-		}
+		for (int i = 0; i <= maxVal; i++)
+			outFile.write((String.format(formatString, i, histAry[i])) + '\n');
 	}
 
 	public void dispHist(String histFile) throws IOException {
-		BufferedWriter histGraphFile = new BufferedWriter(new FileWriter(histFile, true));
-		histGraphFile.newLine();    // blank line
-		histGraphFile.write(numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal);
-		histGraphFile.newLine();
+		BufferedWriter histGraphFile = new BufferedWriter(new FileWriter(histFile, true));    // set `append` boolean to true to not overwrite
+		histGraphFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
 		for (int i = 0; i <= maxVal; i++) {
 			histGraphFile.write(i + " (" + histAry[i] + "):");
 			for (int j = 0; j < histAry[i]; j++)
@@ -106,7 +92,7 @@ public class BGThresholdSelector
 		}
 	}
 
-	public void copyArys(int[] ary1, int[] ary2) {
+	public void copyArys(int[] ary1, int[] ary2) throws IllegalArgumentException {
 		if (ary1.length != ary2.length)
 			throw new IllegalArgumentException("Ary1 and Ary2 must be the same length");
 
@@ -194,5 +180,4 @@ public class BGThresholdSelector
 	public void setBiGaussThrVal(int biGaussThrVal) {this.biGaussThrVal = biGaussThrVal;}
 	public void setHistHeight(int histHeight) {this.histHeight = histHeight;}
 	public void setMaxHeight(int maxHeight) {this.maxHeight = maxHeight;}
-
 }
