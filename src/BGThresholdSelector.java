@@ -64,8 +64,7 @@ public class BGThresholdSelector
 		return maxFrequency;
 	}
 
-	public void printHist(String histFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile, true));
+	public void printHist(BufferedWriter outFile) throws IOException {
 		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
 
 		int width = Integer.toString(maxVal).length(), fieldWidth = width + 1;
@@ -73,12 +72,10 @@ public class BGThresholdSelector
 
 		for (int i = 0; i <= maxVal; i++)
 			outFile.write((String.format(formatString, i, histAry[i])) + '\n');
-
-		outFile.close();
 	}
 
-	public void dispHist(String histFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(histFile, true));    // set `append` boolean to true to not overwrite
+
+	public void dispHist(BufferedWriter outFile) throws IOException {
 		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
 
 		for (int i = 0; i <= maxVal; i++) {
@@ -87,9 +84,8 @@ public class BGThresholdSelector
 				outFile.write('+');
 			outFile.newLine();
 		}
-
-		outFile.close();
 	}
+
 
 	public void copyArys(int[] ary1, int[] ary2) throws IllegalArgumentException {
 		if (ary1.length != ary2.length)
@@ -114,15 +110,14 @@ public class BGThresholdSelector
 		return graph;
 	}
 
-	public int biGaussian(String logFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
-		outFile.write("Entering biGaussian method\n");
+	public int biGaussian(BufferedWriter logFile) throws IOException {
+		logFile.write("Entering biGaussian method\n");
 
 		double sum1, sum2, total, minSumDiff;
-		int offset = (maxVal - minVal)/10;
+		int offset = (maxVal - minVal) / 10;
 		int dividePt = offset;
 		int bestThr = dividePt;
-		minSumDiff = 99999.0;    // a large value
+		minSumDiff = Double.MAX_VALUE;
 
 		while (dividePt < (maxVal - offset)) {
 			setZero(gaussAry);
@@ -134,18 +129,17 @@ public class BGThresholdSelector
 				bestThr = dividePt;
 				copyArys(gaussAry, bestFitGaussAry);
 			}
-			outFile.write("\nIn biGaussian(): dividePt=" + dividePt + ", sum1=" + sum1 + ", sum2=" + sum2 + ", total=" + total + ", minSumDiff=" + minSumDiff + ", bestThr=" + bestThr);
+			logFile.write("\nIn biGaussian(): dividePt=" + dividePt + ", sum1=" + sum1 + ", sum2=" + sum2 + ", total=" + total + ", minSumDiff=" + minSumDiff + ", bestThr=" + bestThr);
 			dividePt++;
 		}
 
-		outFile.write("\nLeaving biGaussian method");
-		outFile.close();
+		logFile.write("\nLeaving biGaussian method\n");
 		return bestThr;
 	}
 
-	public double fitGauss(int leftIndex, int rightIndex, int[] histAry, int[] gaussAry, int maxHeight, char[][] graph, String logFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
-		outFile.write("Entering fitGauss method\n");
+
+	public double fitGauss(int leftIndex, int rightIndex, int[] histAry, int[] gaussAry, int maxHeight, char[][] graph, BufferedWriter logFile) throws IOException {
+		logFile.write("Entering fitGauss method\n");
 
 		double sum = 0.0, mean, var, gVal;
 		mean = computeMean(leftIndex, rightIndex, maxHeight, histAry, logFile);
@@ -157,55 +151,52 @@ public class BGThresholdSelector
 			gaussAry[i] = (int) gVal;
 		}
 
-		outFile.write("Leaving fitGauss method. Sum is " + sum+'\n');
-		outFile.close();
+		logFile.write("Leaving fitGauss method. Sum is " + sum + "\n");
 		return sum;
 	}
 
-	public double computeMean(int leftIndex, int rightIndex, int maxHeight, int[] histAry, String logFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
-		outFile.write("Entering computeMean method\n");
+
+	public double computeMean(int leftIndex, int rightIndex, int maxHeight, int[] histAry, BufferedWriter logFile) throws IOException {
+		logFile.write("Entering computeMean method\n");
 
 		maxHeight = 0;
 		double sum = 0;
 		int numPixels = 0;
 
 		for (int i = leftIndex; i < rightIndex; i++) {
-			sum += (histAry[i]*i);
+			sum += (histAry[i] * i);
 			numPixels += histAry[i];
 			if (histAry[i] > maxHeight)
 				maxHeight = histAry[i];
 		}
 
-		outFile.write("Leaving computeMean method");
-		outFile.close();
-		return sum/numPixels;
+		logFile.write("Leaving computeMean method\n");
+		return sum / numPixels;
 	}
 
-	public double computeVar(int leftIndex, int rightIndex, double mean, int[] histAry, String logFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
-		outFile.write("Entering computeVar method\n");
+
+	public double computeVar(int leftIndex, int rightIndex, double mean, int[] histAry, BufferedWriter logFile) throws IOException {
+		logFile.write("\nEntering computeVar method");
 
 		double sum = 0.0;
 		int numPixels = 0;
 
 		for (int i = leftIndex; i < rightIndex; i++) {
-			sum += Math.pow((double) histAry[i]*((double) i - mean), 2);
+			sum += Math.pow((double) histAry[i] * ((double) i - mean), 2);
 			numPixels += histAry[i];
 		}
 
-		outFile.write("Leaving computeVar method\n");
-		outFile.close();
-		return sum/numPixels;
+		logFile.write("\nLeaving computeVar method");
+		return sum / numPixels;
 	}
+
 
 	public double modifiedGauss(int x, double mean, double var, int maxHeight) {
 		return maxHeight*Math.exp(-Math.pow(x - mean, 2)/(2*var));
 	}
 
-	public void plotGaussGraph(int[] bestFitGaussAry, char[][] gaussGraph, String logFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
-		outFile.write("Entering plotGaussGraph() method\n");
+	public void plotGaussGraph(int[] bestFitGaussAry, char[][] gaussGraph, BufferedWriter logFile) throws IOException {
+		logFile.write("\nEntering plotGaussGraph() method\n");
 
 		setBlanks(gaussGraph);
 		for (int i = 0; i <= maxVal; i++)
@@ -213,15 +204,14 @@ public class BGThresholdSelector
 				for (int j = 0; j < bestFitGaussAry[i]; j++)
 					gaussGraph[i][j] = '*';
 
-		outFile.write("Leaving plotGaussGraph() method\n");
-		outFile.close();
+		logFile.write("\nLeaving plotGaussGraph() method\n");
 	}
 
-	public void plotGapGraph(int[] histAry, int[] bestFitGaussAry, String logFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(logFile));
-		outFile.write("Entering plotGaussGraph() method\n");
 
-		setBlanks(gaussGraph);
+	public void plotGapGraph(int[] histAry, int[] bestFitGaussAry, BufferedWriter logFile) throws IOException {
+		logFile.write("\nEntering plotGapGraph() method\n");
+
+		setBlanks(gapGraph);
 		int end1, end2;
 		for (int i = 0; i <= maxVal; i++) {
 			if (bestFitGaussAry[i] <= histAry[i]) {
@@ -232,15 +222,14 @@ public class BGThresholdSelector
 				end2 = bestFitGaussAry[i];
 			}
 			for (int j = end1; j <= end2; j++)
-				gaussGraph[i][j] = '@';
+				gapGraph[i][j] = '@';
 		}
 
-		outFile.write("Leaving plotGapGraph() method\n");
-		outFile.close();
+		logFile.write("\nLeaving plotGapGraph() method\n");
 	}
 
-	public void printBestFitGauss(String gaussFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(gaussFile, true));
+
+	public void printBestFitGauss(BufferedWriter outFile) throws IOException {
 		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
 
 		int width = Integer.toString(maxVal).length(), fieldWidth = width + 1;
@@ -248,31 +237,25 @@ public class BGThresholdSelector
 
 		for (int i = 0; i <= maxVal; i++)
 			outFile.write((String.format(formatString, i, bestFitGaussAry[i])) + '\n');
-
-		outFile.close();
 	}
 
-	public void dispGaussGraph(String gaussFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(gaussFile, true)); // don't overwrite
+
+	public void dispGaussGraph(BufferedWriter outFile) throws IOException {
 		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
 
-		for (int i = 0; i < maxVal + 1; i++) {
+		for (int i = 0; i <= maxVal; i++) {
 			outFile.write(i + " :");
-			for (int j = 0; j < histHeight + 1; j++) {
+			for (int j = 0; j <= histHeight; j++) {
 				char c = gaussGraph[i][j];
-				if (c != ' ') {
+				if (c != ' ')
 					outFile.write(c);
-				}
 			}
 			outFile.newLine();
 		}
-
-		outFile.close();
 	}
 
-	public void dispGapGraph(String gaussFile) throws IOException {
-		BufferedWriter outFile = new BufferedWriter(new FileWriter(gaussFile, true)); // don't overwrite
-		outFile.write('\n' + numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
+	public void dispGapGraph(BufferedWriter outFile) throws IOException {
+		outFile.write(numRows + ' ' + numCols + ' ' + minVal + ' ' + maxVal + '\n');
 
 		for (int i = 0; i <= maxVal; i++) {
 			outFile.write(i + " :");
@@ -311,10 +294,6 @@ public class BGThresholdSelector
 
 		return maxFrequency;
 	}
-
-//	public double modifiedGauss(double x, double mean, double var, int maxHeight) {
-//
-//	}
 
 	public int getNumRows() {return numRows;}
 	public int getNumCols() {return numCols;}
